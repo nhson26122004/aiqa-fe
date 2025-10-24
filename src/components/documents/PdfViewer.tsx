@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
-import api from '@/api/axios'
 
 // Set worker path
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
@@ -22,8 +21,19 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ url }) => {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(url, {
-          credentials: 'include', // Gửi cookies
+        console.log('PDF Viewer - Loading URL:', url)
+
+        // Ensure URL is absolute
+        let fetchUrl = url
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          // If relative URL, prepend backend base URL
+          const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/'
+          fetchUrl = baseUrl.replace('/api/', '') + url
+          console.log('PDF Viewer - Converted to absolute URL:', fetchUrl)
+        }
+
+        const response = await fetch(fetchUrl, {
+          credentials: 'include',
           headers: {
             'Content-Type': 'application/pdf',
           },

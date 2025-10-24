@@ -22,13 +22,19 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ url }) => {
       setLoading(true)
       setError(null)
       try {
-        // Fetch PDF with credentials using axios
-        const response = await api.get(url, {
-          responseType: 'arraybuffer',
+        const response = await fetch(url, {
+          credentials: 'include', // Gửi cookies
+          headers: {
+            'Content-Type': 'application/pdf',
+          },
         })
 
-        // Load PDF from binary data
-        const loadingTask = pdfjsLib.getDocument({ data: response.data })
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const arrayBuffer = await response.arrayBuffer()
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
         const pdf = await loadingTask.promise
         pdfDocRef.current = pdf
         setNumPages(pdf.numPages)

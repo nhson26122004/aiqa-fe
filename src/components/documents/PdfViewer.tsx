@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
+import api from '@/api/axios'
 
 // Set worker path
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
@@ -13,19 +14,28 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ url }) => {
   const [numPages, setNumPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const pdfDocRef = useRef<any>(null)
 
   useEffect(() => {
     const loadPdf = async () => {
       setLoading(true)
+      setError(null)
       try {
-        const loadingTask = pdfjsLib.getDocument(url)
+        // Fetch PDF with credentials using axios
+        const response = await api.get(url, {
+          responseType: 'arraybuffer',
+        })
+
+        // Load PDF from binary data
+        const loadingTask = pdfjsLib.getDocument({ data: response.data })
         const pdf = await loadingTask.promise
         pdfDocRef.current = pdf
         setNumPages(pdf.numPages)
         renderPage(1, pdf)
       } catch (error) {
         console.error('Error loading PDF:', error)
+        setError('Failed to load PDF. Please try again.')
       } finally {
         setLoading(false)
       }
@@ -69,6 +79,22 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ url }) => {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     )
   }
